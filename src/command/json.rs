@@ -15,9 +15,9 @@ pub struct JsonCommand {
 }
 
 impl JsonCommand {
-    pub fn new(data: String, path: Option<String>) -> anyhow::Result<Self> {
-        let data: Value = serde_json::from_str(&data)?;
-        let path = path.map(|p| JsonPath::parse(&p).unwrap());
+    pub fn new(data: &str, path: Option<&str>) -> anyhow::Result<Self> {
+        let data: Value = serde_json::from_str(data)?;
+        let path = path.map(|p| JsonPath::parse(p).unwrap());
         Ok(Self { data, path })
     }
 }

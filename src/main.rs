@@ -1,4 +1,5 @@
 mod command;
+
 use std::ops::Deref;
 
 use crate::command::Command;
@@ -10,7 +11,7 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Print and copy current timestamp in local, or parse and display target timestamp info
+    /// Alias: [ts]. Print and copy current timestamp in local, or parse and display target timestamp info
     #[clap(name = "timestamp", alias = "ts")]
     Timestamp { timestamp: Option<i64> },
 
@@ -24,7 +25,7 @@ enum Commands {
         path: Option<String>,
     },
 
-    // Parse crontab expression and display next 10 times' datetime
+    /// Alias: [cron]. Parse crontab expression and display next 10 times datetime
     #[clap(name = "crontab", alias = "cron")]
     Crontab { expression: String },
 }
@@ -37,12 +38,10 @@ struct Cli {
 
 impl Cli {
     fn execute(&self) -> anyhow::Result<()> {
-        let cmd: Box<dyn Command> = match &self.commands {
-            Commands::Timestamp { timestamp } => Box::new(TimestampCommand::new(timestamp.clone())),
-            Commands::Json { data, path } => {
-                Box::new(JsonCommand::new(data.clone(), path.clone())?)
-            }
-            Commands::Crontab { expression } => Box::new(CrontabCommand::new(expression.deref())?),
+        let cmd: &dyn Command = match &self.commands {
+            Commands::Timestamp { timestamp } => &TimestampCommand::new(*timestamp),
+            Commands::Json { data, path } => &JsonCommand::new(data, path.as_deref())?,
+            Commands::Crontab { expression } => &CrontabCommand::new(expression)?,
         };
         cmd.execute()?;
         Ok(())
