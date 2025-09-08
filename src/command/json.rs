@@ -12,13 +12,18 @@ use crate::command::Command;
 pub struct JsonCommand {
     data: Value,
     path: Option<JsonPath>,
+    compress: bool,
 }
 
 impl JsonCommand {
-    pub fn new(data: &str, path: Option<&str>) -> anyhow::Result<Self> {
+    pub fn new(data: &str, path: Option<&str>, compress: bool) -> anyhow::Result<Self> {
         let data: Value = serde_json::from_str(data)?;
         let path = path.map(|p| JsonPath::parse(p).unwrap());
-        Ok(Self { data, path })
+        Ok(Self {
+            data,
+            path,
+            compress,
+        })
     }
 }
 
@@ -34,9 +39,19 @@ impl JsonCommand {
         let json_str = match &self.path {
             Some(path) => {
                 let res = path.query(&self.data);
-                serde_json::to_string_pretty(&res)
+                if self.compress {
+                    serde_json::to_string(&res)
+                } else {
+                    serde_json::to_string_pretty(&res)
+                }
             }
-            None => serde_json::to_string_pretty(&self.data),
+            None => {
+                if self.compress {
+                    serde_json::to_string(&self.data)
+                } else {
+                    serde_json::to_string_pretty(&self.data)
+                }
+            }
         }
         .unwrap();
 

@@ -23,6 +23,10 @@ enum Commands {
         /// JSON path for query from data, RFC: https://www.rfc-editor.org/rfc/rfc9535.html
         #[arg(short, long)]
         path: Option<String>,
+
+        /// Compress output json
+        #[arg(short, long)]
+        compress: bool,
     },
 
     /// Alias: [cron]. Parse crontab expression and display next 10 times datetime
@@ -40,7 +44,11 @@ impl Cli {
     fn execute(&self) -> anyhow::Result<()> {
         let cmd: &dyn Command = match &self.commands {
             Commands::Timestamp { timestamp } => &TimestampCommand::new(*timestamp),
-            Commands::Json { data, path } => &JsonCommand::new(data, path.as_deref())?,
+            Commands::Json {
+                data,
+                path,
+                compress,
+            } => &JsonCommand::new(data, path.as_deref(), *compress)?,
             Commands::Crontab { expression } => &CrontabCommand::new(expression)?,
         };
         cmd.execute()?;
