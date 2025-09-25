@@ -31,14 +31,17 @@ pub struct Config {
 }
 
 lazy_static! {
-    pub static ref CFG: Config = load_config().unwrap();
+    pub static ref CFG: Config = load_config();
 }
 
-fn load_config() -> anyhow::Result<Config> {
+fn load_config() -> Config {
     let lua = Lua::new();
-    let home_path = env::var("HOME")?;
+    let home_path = env::var("HOME").expect("fail to find home dir");
     let path = Path::new(&home_path).join(".config/ssr/init.lua");
-    let lua_code = fs::read_to_string(path)?;
-    let config: Config = lua.from_value(lua.load(lua_code).eval()?)?;
-    Ok(config)
+    if !path.exists() {
+        return Config::default();
+    }
+    let lua_code = fs::read_to_string(path).expect("fail to read file");
+    let config: Config = lua.from_value(lua.load(lua_code).eval().unwrap()).unwrap();
+    config
 }

@@ -93,15 +93,11 @@ impl TranslateCommand {
 
     async fn send_request(
         &self,
+        key: impl Into<String>,
+        base_url: impl Into<String>,
+        model: &str,
         messages: Vec<ChatCompletionMessage>,
     ) -> anyhow::Result<ChatCompletionMessage> {
-        let ai = &config::CFG.ai;
-        if !ai.enable {
-            return Err(anyhow::anyhow!("ai config is not set or enable"));
-        }
-        let key = &ai.key;
-        let base_url = &ai.base_url;
-        let model = &ai.model;
         let credentials = Credentials::new(key, base_url);
         let chat_completion = ChatCompletion::builder(model, messages)
             .credentials(credentials)
@@ -112,10 +108,18 @@ impl TranslateCommand {
     }
 
     async fn run(&self) -> anyhow::Result<()> {
-        let messages = self.build_message();
+        let ai = &config::CFG.ai;
+        if !ai.enable {
+            return Err(anyhow::anyhow!("ai config is not set or enable"));
+        }
+        let key = &ai.key;
+        let base_url = &ai.base_url;
+        let model = &ai.model;
+
         stdout().execute(Print("请求处理中！"))?;
 
-        let resp = self.send_request(messages).await?;
+        let messages = self.build_message();
+        let resp = self.send_request(key, base_url, model, messages).await?;
 
         stdout()
             .execute(Clear(crossterm::terminal::ClearType::CurrentLine))?
