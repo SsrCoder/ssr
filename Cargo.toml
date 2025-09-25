@@ -7,7 +7,6 @@ edition = "2024"
 anyhow = "1.0.99"
 chrono = "0.4.41"
 clap = { version = "4.5.46", features = ["derive"] }
-clipboard = "0.5.0"
 colored = "3.0.0"
 cron = "0.15.0"
 crossterm = "0.29.0"
@@ -20,3 +19,4 @@ serde_json_path = "0.7.2"
 syntect = "5.2.0"
 tokio = { version = "1.47.1", features = ["rt"] }
 reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls", "json"] }
+clipboard-rs = "0.3.0"

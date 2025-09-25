@@ -2,7 +2,8 @@ use super::Command;
 use chrono::Local;
 use chrono::TimeZone;
 use chrono::Utc;
-use clipboard::ClipboardProvider;
+use clipboard_rs::Clipboard;
+use clipboard_rs::ClipboardContext;
 use colored::Colorize;
 
 pub struct TimestampCommand {
@@ -61,9 +62,8 @@ impl Command for TimestampCommand {
                 let timestamp = now.timestamp().to_string();
                 println!("current timestamp: {}", &timestamp);
 
-                let mut cb =
-                    clipboard::ClipboardContext::new().expect("unable to access clipboard");
-                cb.set_contents(timestamp)
+                let cb = ClipboardContext::new().expect("unable to access clipboard");
+                cb.set_text(timestamp)
                     .expect("fail to set clipboard content");
             }
         }
