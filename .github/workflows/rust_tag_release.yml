@@ -3,14 +3,17 @@ name: Rust Tag Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 env:
   CARGO_TERM_COLOR: always
+  BINARY_NAME: your_binary_name 
 
 jobs:
   cross_build:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-C target-feature=+crt-static" # 确保 musl 静态链接更彻底
     
     strategy:
       fail-fast: false
@@ -36,9 +39,6 @@ jobs:
       - name: Install cross
         run: cargo install cross
 
-      - name: Install Python 3
-        run: sudo apt-get update && sudo apt-get install -y python3
-
       - name: Build with cross for ${{ matrix.target }}
         run: cross build --release --target ${{ matrix.target }}
       
@@ -47,3 +47,87 @@ jobs:
         with:
           path: target/${{ matrix.target }}/release/*
           name: ${{ matrix.target }}
+
+  release:
+    name: Create Release and Upload Assets
+    needs: cross_build # 依赖于编译 Job 成功
+    runs-on: ubuntu-latest
+    
+    # 必须有写入权限才能创建/修改 Release
+    permissions:
+      contents: write 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      # 1. 获取 Release 版本号
+      - name: Get Release Version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # 2. 创建 GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        id: create_release
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false # 默认为 true 方便测试，正式使用时建议改为 false
+          prerelease: ${{ contains(github.ref, '-') }}
+          body: |
+            ## 🎉 Release ${{ steps.get_version.outputs.VERSION }}
+            
+            Multi-platform binaries for all major targets are available below.
+      
+      # 3. 下载所有编译产物 Artifacts
+      - name: Download all Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts_dir
+      
+      # 4. 准备并上传 Assets
+      - name: Prepare and Upload Assets
+        run: |
+          RELEASE_TAG=${{ steps.get_version.outputs.VERSION }}
+          BIN_NAME="${{ env.BINARY_NAME }}"
+          
+          # 遍历下载目录 (artifacts_dir) 中的所有子目录 (即 targets)
+          for TARGET in artifacts_dir/*; do
+            TARGET_NAME=$(basename $TARGET)
+            
+            # Windows 目标 (需要 .exe 和 zip 压缩)
+            if [[ "$TARGET_NAME" == *"-windows-gnu" ]]; then
+              FILE_EXT=".exe"
+              ARCHIVE_EXT="zip"
+            # 所有 Linux/Musl/GNU 目标 (需要 tar.gz 压缩)
+            else
+              FILE_EXT=""
+              ARCHIVE_EXT="tar.gz"
+            fi
+            
+            # 定义文件名和压缩包名
+            BIN_PATH="$TARGET/$BIN_NAME$FILE_EXT"
+            ASSET_NAME="${BIN_NAME}-${RELEASE_TAG}-${TARGET_NAME}.${ARCHIVE_EXT}"
+            
+            echo "Processing $TARGET_NAME -> $ASSET_NAME"
+            
+            # 压缩文件
+            if [ "$ARCHIVE_EXT" == "zip" ]; then
+              zip -j "$ASSET_NAME" "$BIN_PATH"
+            else
+              tar -czvf "$ASSET_NAME" -C "$TARGET" "$(basename "$BIN_PATH")"
+            fi
+
+            # 附加到 Release (使用 curl 命令)
+            curl -L \
+              -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@${ASSET_NAME}" \
+              "${{ steps.create_release.outputs.upload_url }}?name=${ASSET_NAME}"
+              
+            echo "Uploaded $ASSET_NAME"
+          done
+        shell: bash
