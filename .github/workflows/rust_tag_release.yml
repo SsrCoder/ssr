@@ -118,14 +118,15 @@ jobs:
               tar -czvf "$ASSET_NAME" -C "$TARGET" "$(basename "$BIN_PATH")"
             fi
 
-            # 附加到 Release (使用 curl 命令)
+            echo "Uploading $ASSET_NAME to $UPLOAD_URL"
+
             curl -L \
               -X POST \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "Content-Type: application/octet-stream" \
               --data-binary "@${ASSET_NAME}" \
-              "${{ steps.create_release.outputs.upload_url }}?name=${ASSET_NAME}"
+              "${UPLOAD_URL}?name=${ASSET_NAME}" # Filename as URL query parameter
               
-            echo "Uploaded $ASSET_NAME"
+            echo "Uploaded $ASSET_NAME successfully."
           done
         shell: bash
