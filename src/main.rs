@@ -1,11 +1,11 @@
 mod command;
-
-use std::ops::Deref;
+mod config;
 
 use crate::command::Command;
 use crate::command::CrontabCommand;
 use crate::command::JsonCommand;
 use crate::command::TimestampCommand;
+use crate::command::TranslateCommand;
 use clap::Parser;
 use clap::Subcommand;
 
@@ -32,6 +32,21 @@ enum Commands {
     /// Alias: [cron]. Parse crontab expression and display next 10 times datetime
     #[clap(name = "crontab", alias = "cron")]
     Crontab { expression: String },
+
+    /// Translate by ai
+    #[clap(name = "translate", alias = "trans")]
+    Translate {
+        /// Text you want to translate
+        text: String,
+
+        /// Which language you want to translate from
+        #[arg(short, long)]
+        from: Option<String>,
+
+        /// Which language you want to translate to, default: CN
+        #[arg(short, long)]
+        to: Option<String>,
+    },
 }
 
 #[derive(Parser)]
@@ -50,6 +65,9 @@ impl Cli {
                 compress,
             } => &JsonCommand::new(data, path.as_deref(), *compress)?,
             Commands::Crontab { expression } => &CrontabCommand::new(expression)?,
+            Commands::Translate { text, from, to } => {
+                &TranslateCommand::new(text, from.as_deref(), to.as_deref())?
+            }
         };
         cmd.execute()?;
         Ok(())

@@ -2,7 +2,7 @@ use serde_json::Value;
 use serde_json_path::JsonPath;
 use syntect::{
     easy::HighlightLines,
-    highlighting::{Style, ThemeSet},
+    highlighting::{Color, Style, ThemeSet},
     parsing::SyntaxSet,
     util::{LinesWithEndings, as_24_bit_terminal_escaped},
 };
@@ -65,9 +65,15 @@ impl JsonCommand {
         let syntax = ps
             .find_syntax_by_name("JSON")
             .expect("JSON syntax not found");
-        let theme = &ts.themes["base16-ocean.dark"];
+        let mut theme = ts.themes["base16-ocean.dark"].clone();
+        theme.settings.background = Some(Color {
+            r: 0x00,
+            g: 0x00,
+            b: 0x00,
+            a: 0x00,
+        });
 
-        let mut h = HighlightLines::new(syntax, theme);
+        let mut h = HighlightLines::new(syntax, &theme);
 
         for line in LinesWithEndings::from(data) {
             let ranges: Vec<(Style, &str)> =

@@ -21,7 +21,11 @@ impl Command for TimestampCommand {
             Some(ts) => {
                 let now = Local::now().timestamp();
 
-                let utc_time = Utc.timestamp_opt(ts, 0).unwrap();
+                let utc_time = if ts >= 1e12 as i64 {
+                    Utc.timestamp_opt(ts / 1000, (ts % 1000) as u32).unwrap()
+                } else {
+                    Utc.timestamp_opt(ts, 0).unwrap()
+                };
                 let time = utc_time.with_timezone(&Local);
 
                 let mut diff = now - ts;
