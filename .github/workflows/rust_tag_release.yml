@@ -33,18 +33,17 @@ jobs:
         with:
           toolchain: stable
 
-      # 1. 安装 cross
       - name: Install cross
         run: cargo install cross
 
-      # 2. 使用 cross 编译
+      - name: Install Python 3
+        run: sudo apt-get update && sudo apt-get install -y python3
+
       - name: Build with cross for ${{ matrix.target }}
         run: cross build --release --target ${{ matrix.target }}
       
-      # 3. 打包和上传二进制文件
       - name: Package and upload artifact
         uses: actions/upload-artifact@v4
         with:
-          # cross 编译的二进制文件也位于 target/<TARGET>/release/ 目录
           path: target/${{ matrix.target }}/release/*
           name: ${{ matrix.target }}
