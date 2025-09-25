@@ -13,9 +13,10 @@ cron = "0.15.0"
 crossterm = "0.29.0"
 lazy_static = "1.5.0"
 mlua = { version = "0.11.3", features = ["anyhow", "lua54", "serde", "vendored"] }
-openai = { version = "1.1.1", features = ["rustls"] }
+openai = { version = "1.1.1", default-features = false, features = ["rustls"] }
 serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = { version = "1.0.143", features = ["preserve_order"] }
 serde_json_path = "0.7.2"
 syntect = "5.2.0"
-tokio = { version = "1.47.1", features = ["full"] }
+tokio = { version = "1.47.1", features = ["rt"] }
+reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls", "json"] }
