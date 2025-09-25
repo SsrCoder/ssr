@@ -90,6 +90,7 @@ jobs:
         run: |
           RELEASE_TAG=${{ steps.get_version.outputs.VERSION }}
           BIN_NAME="${{ env.BINARY_NAME }}"
+          UPLOAD_URL="${{ steps.create_release.outputs.upload_url }}"
           
           # 遍历下载目录 (artifacts_dir) 中的所有子目录 (即 targets)
           for TARGET in artifacts_dir/*; do
