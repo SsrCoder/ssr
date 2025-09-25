@@ -7,7 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  BINARY_NAME: your_binary_name 
+  BINARY_NAME: ssr 
 
 jobs:
   cross_build:
