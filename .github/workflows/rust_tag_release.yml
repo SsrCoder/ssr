@@ -12,8 +12,6 @@ env:
 jobs:
   cross_build:
     runs-on: ubuntu-latest
-    env:
-      RUSTFLAGS: "-C target-feature=+crt-static" # 确保 musl 静态链接更彻底
     
     strategy:
       fail-fast: false
