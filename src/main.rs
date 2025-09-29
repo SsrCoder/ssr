@@ -95,8 +95,8 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn init_log() -> anyhow::Result<Vec<WorkerGuard>> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("ssr");
-    let path = xdg_dirs.get_state_home().unwrap();
+    let base_dirs = cross_xdg::BaseDirs::new()?;
+    let path = base_dirs.state_home().join("ssr");
 
     let error_file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)

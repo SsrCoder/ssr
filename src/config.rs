@@ -68,14 +68,14 @@ lazy_static! {
 }
 
 fn load_config() -> Config {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("ssr");
-    let path = xdg_dirs.get_config_file("init.lua");
-    if path.as_ref().is_none_or(|p| !p.exists()) {
+    let base_dirs = cross_xdg::BaseDirs::new().unwrap();
+    let path = base_dirs.state_home().join("ssr/init.lua");
+    if !path.exists() {
         return Config::default();
     }
 
     let lua = Lua::new();
-    let lua_code = fs::read_to_string(path.unwrap()).expect("fail to read file");
+    let lua_code = fs::read_to_string(path).expect("fail to read file");
     let config: Config = lua.from_value(lua.load(lua_code).eval().unwrap()).unwrap();
     config
 }
