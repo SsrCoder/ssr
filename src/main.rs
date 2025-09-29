@@ -84,12 +84,6 @@ impl Cli {
 
 fn main() -> anyhow::Result<()> {
     let _guards = init_log()?;
-
-    debug!("debug");
-    info!("info");
-    warn!("warn");
-    error!("error");
-
     let cli = Cli::parse();
     cli.execute()
 }
