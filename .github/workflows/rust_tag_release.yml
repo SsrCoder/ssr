@@ -11,8 +11,6 @@ env:
 
 jobs:
   cross_build:
-    runs-on: ubuntu-latest
-    
     strategy:
       fail-fast: false
       matrix:
@@ -25,74 +23,19 @@ jobs:
           - x86_64-unknown-linux-musl  # Linux x86_64 (Musl)
           - aarch64-unknown-linux-musl # Linux ARM64 (Musl)
 
+    runs-on: ${{ matrix.platform.runs-on }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@v1
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
         with:
-          toolchain: stable
-
-      - name: Install cross
-        run: cargo install cross
-
-      - name: Build with cross for ${{ matrix.target }}
-        run: cross build --release --target ${{ matrix.target }}
-      
-      - name: Package and upload artifact
-        uses: actions/upload-artifact@v4
+          command: build
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true
+      - name: Publish artifacts and release
+        uses: houseabsolute/actions-rust-release@v0
         with:
-          path: target/${{ matrix.target }}/release/*
-          name: ${{ matrix.target }}
-
-  release:
-    name: Create Release and Upload Assets
-    needs: cross_build # 依赖于编译 Job 成功
-    runs-on: ubuntu-latest
-    
-    # 必须有写入权限才能创建/修改 Release
-    permissions:
-      contents: write 
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      # 1. 获取 Release 版本号
-      - name: Get Release Version
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        shell: bash
-
-      # 2. 创建 GitHub Release
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        id: create_release
-        with:
-          tag_name: ${{ github.ref }}
-          name: Release ${{ steps.get_version.outputs.VERSION }}
-          draft: false # 默认为 true 方便测试，正式使用时建议改为 false
-          prerelease: ${{ contains(github.ref, '-') }}
-          body: |
-            ## 🎉 Release ${{ steps.get_version.outputs.VERSION }}
-            
-            Multi-platform binaries for all major targets are available below.
-      
-      # 3. 下载所有编译产物 Artifacts
-      - name: Download all Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts_dir
-
-      # 4. upload aarch64-unknown-linux-gnu
-      - name: upload linux artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts_dir/ssr-v0.0.5-aarch64-unknown-linux-gnu.tar.gz
-          asset_name: ssr-v0.0.5-aarch64-unknown-linux-gnu.tar.gz
-          asset_content_type: application/gzip
-
+          executable-name: ubi
+          target: ${{ matrix.platform.target }}
