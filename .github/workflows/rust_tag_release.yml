@@ -84,50 +84,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts_dir
-      
-      # 4. 准备并上传 Assets
-      - name: Prepare and Upload Assets
-        run: |
-          RELEASE_TAG=${{ steps.get_version.outputs.VERSION }}
-          BIN_NAME="${{ env.BINARY_NAME }}"
-          UPLOAD_URL="${{ steps.create_release.outputs.upload_url }}"
-          
-          # 遍历下载目录 (artifacts_dir) 中的所有子目录 (即 targets)
-          for TARGET in artifacts_dir/*; do
-            TARGET_NAME=$(basename $TARGET)
-            
-            # Windows 目标 (需要 .exe 和 zip 压缩)
-            if [[ "$TARGET_NAME" == *"-windows-gnu" ]]; then
-              FILE_EXT=".exe"
-              ARCHIVE_EXT="zip"
-            # 所有 Linux/Musl/GNU 目标 (需要 tar.gz 压缩)
-            else
-              FILE_EXT=""
-              ARCHIVE_EXT="tar.gz"
-            fi
-            
-            # 定义文件名和压缩包名
-            BIN_PATH="$TARGET/$BIN_NAME$FILE_EXT"
-            ASSET_NAME="${BIN_NAME}-${RELEASE_TAG}-${TARGET_NAME}.${ARCHIVE_EXT}"
-            
-            echo "Processing $TARGET_NAME -> $ASSET_NAME"
-            
-            # 压缩文件
-            if [ "$ARCHIVE_EXT" == "zip" ]; then
-              zip -j "$ASSET_NAME" "$BIN_PATH"
-            else
-              tar -czvf "$ASSET_NAME" -C "$TARGET" "$(basename "$BIN_PATH")"
-            fi
 
-            echo "Uploading $ASSET_NAME to $UPLOAD_URL"
+      # 4. upload aarch64-unknown-linux-gnu
+      - name: upload linux artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts_dir/ssr-v0.0.5-aarch64-unknown-linux-gnu.tar.gz
+          asset_name: ssr-v0.0.5-aarch64-unknown-linux-gnu.tar.gz
+          asset_content_type: application/gzip
 
-            curl -L \
-              -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary "@${ASSET_NAME}" \
-              "${UPLOAD_URL}?name=${ASSET_NAME}" # Filename as URL query parameter
-              
-            echo "Uploaded $ASSET_NAME successfully."
-          done
-        shell: bash
