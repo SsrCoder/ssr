@@ -13,11 +13,27 @@
 
 ```lua
 return {
-    ai = {
-        enable = true,
-        key = "", -- api key
-        base_url = "", -- 兼容 openai api 的接口
-        model = "", -- 使用的模型
-    },
+	ai = {
+		default = "deepseek-chat",
+		providers = {
+			{
+				enable = true,
+				name = "deepseek-chat",
+				key = "sk-xxxxxxxxxxxxxx",
+				base_url = "https://api.deepseek.com/v1",
+				model = "deepseek-chat",
+			},
+			{
+				enable = true,
+				name = "qwen-flash",
+				key = "sk-xxxxxxxxxxxxxx",
+				base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1",
+				model = "qwen-flash",
+			},
+		},
+	},
+	translate = {
+		ai_provider = "qwen-flash",
+	},
 }
 ```

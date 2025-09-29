@@ -8,6 +8,14 @@ use crate::command::TimestampCommand;
 use crate::command::TranslateCommand;
 use clap::Parser;
 use clap::Subcommand;
+use tracing::level_filters::LevelFilter;
+use tracing::*;
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_appender::rolling::RollingFileAppender;
+use tracing_appender::rolling::Rotation;
+use tracing_subscriber::Layer;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Subcommand)]
 enum Commands {
@@ -75,6 +83,69 @@ impl Cli {
 }
 
 fn main() -> anyhow::Result<()> {
+    let _guards = init_log()?;
+
+    debug!("debug");
+    info!("info");
+    warn!("warn");
+    error!("error");
+
     let cli = Cli::parse();
     cli.execute()
+}
+
+fn init_log() -> anyhow::Result<Vec<WorkerGuard>> {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("ssr");
+    let path = xdg_dirs.get_state_home().unwrap();
+
+    let error_file_appender = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("error")
+        .filename_suffix("log")
+        .max_log_files(30)
+        .build(&path)?;
+    let (error_non_blocking, _guard1) = tracing_appender::non_blocking(error_file_appender);
+
+    let info_file_appender = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("info")
+        .filename_suffix("log")
+        .max_log_files(30)
+        .build(&path)?;
+    let (info_non_blocking, _guard2) = tracing_appender::non_blocking(info_file_appender);
+
+    let all_file_appender = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("all")
+        .filename_suffix("log")
+        .max_log_files(30)
+        .build(&path)?;
+    let (all_non_blocking, _guard3) = tracing_appender::non_blocking(all_file_appender);
+
+    // let (stdout_non_blocking, _guard3) = tracing_appender::non_blocking(std::io::stdout());
+
+    let error_file_layer = tracing_subscriber::fmt::Layer::new()
+        .with_writer(error_non_blocking)
+        .with_ansi(false)
+        .compact()
+        .with_filter(LevelFilter::from_level(Level::WARN));
+
+    let info_file_layer = tracing_subscriber::fmt::Layer::new()
+        .with_writer(info_non_blocking)
+        .with_ansi(false)
+        .compact()
+        .with_filter(LevelFilter::from_level(Level::INFO));
+
+    let all_file_layer = tracing_subscriber::fmt::Layer::new()
+        .with_writer(all_non_blocking)
+        .with_ansi(false)
+        .compact()
+        .with_filter(LevelFilter::from_level(Level::TRACE));
+
+    tracing_subscriber::registry()
+        .with(error_file_layer)
+        .with(info_file_layer)
+        .with(all_file_layer)
+        .init();
+    Ok(vec![_guard1, _guard2, _guard3])
 }

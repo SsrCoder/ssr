@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::{env, fs, path::Path};
+use std::fs;
 
 use mlua::{Lua, LuaSerdeExt};
 use serde::Deserialize;
@@ -13,9 +13,10 @@ fn ai_config_default_model() -> String {
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
-pub struct AiConfig {
+pub struct AiProvider {
     #[serde(default)]
     pub enable: bool,
+    pub name: String,
     #[serde(default = "ai_config_default_base_url")]
     pub base_url: String,
     #[serde(default)]
@@ -25,9 +26,41 @@ pub struct AiConfig {
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
+pub struct AiConfig {
+    pub default: String,
+    #[serde(default)]
+    pub providers: Vec<AiProvider>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct TranslateConfig {
+    #[serde(default)]
+    pub ai_provider: String,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Config {
     #[serde(default)]
     pub ai: AiConfig,
+    #[serde(default)]
+    pub translate: TranslateConfig,
+}
+
+pub fn get_ai_provider(name: &str) -> Option<AiProvider> {
+    if CFG.ai.providers.len() == 0 {
+        return None;
+    }
+    let name = if name != "" { name } else { &CFG.ai.default };
+    if name != "" {
+        let provider = CFG.ai.providers.iter().find(|p| p.name == name);
+        if provider.is_none_or(|p| !p.enable) {
+            None
+        } else {
+            provider.cloned()
+        }
+    } else {
+        None
+    }
 }
 
 lazy_static! {
@@ -35,13 +68,14 @@ lazy_static! {
 }
 
 fn load_config() -> Config {
-    let lua = Lua::new();
-    let home_path = env::var("HOME").expect("fail to find home dir");
-    let path = Path::new(&home_path).join(".config/ssr/init.lua");
-    if !path.exists() {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("ssr");
+    let path = xdg_dirs.get_config_file("init.lua");
+    if path.as_ref().is_none_or(|p| !p.exists()) {
         return Config::default();
     }
-    let lua_code = fs::read_to_string(path).expect("fail to read file");
+
+    let lua = Lua::new();
+    let lua_code = fs::read_to_string(path.unwrap()).expect("fail to read file");
     let config: Config = lua.from_value(lua.load(lua_code).eval().unwrap()).unwrap();
     config
 }

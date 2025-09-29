@@ -108,10 +108,8 @@ impl TranslateCommand {
     }
 
     async fn run(&self) -> anyhow::Result<()> {
-        let ai = &config::CFG.ai;
-        if !ai.enable {
-            return Err(anyhow::anyhow!("ai config is not set or enable"));
-        }
+        let ai = config::get_ai_provider(&config::CFG.translate.ai_provider)
+            .expect("translate ai provider not set or disabled");
         let key = &ai.key;
         let base_url = &ai.base_url;
         let model = &ai.model;
