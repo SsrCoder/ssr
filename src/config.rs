@@ -69,7 +69,7 @@ lazy_static! {
 
 fn load_config() -> Config {
     let base_dirs = cross_xdg::BaseDirs::new().unwrap();
-    let path = base_dirs.state_home().join("ssr/init.lua");
+    let path = base_dirs.config_home().join("ssr/init.lua");
     if !path.exists() {
         return Config::default();
     }
