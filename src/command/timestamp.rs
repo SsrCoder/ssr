@@ -2,8 +2,7 @@ use super::Command;
 use chrono::Local;
 use chrono::TimeZone;
 use chrono::Utc;
-use clipboard_rs::Clipboard;
-use clipboard_rs::ClipboardContext;
+use crossterm::{clipboard::CopyToClipboard, execute};
 use colored::Colorize;
 
 pub struct TimestampCommand {
@@ -62,8 +61,7 @@ impl Command for TimestampCommand {
                 let timestamp = now.timestamp().to_string();
                 println!("current timestamp: {}", &timestamp);
 
-                let cb = ClipboardContext::new().expect("unable to access clipboard");
-                cb.set_text(timestamp)
+                execute!(std::io::stdout(), CopyToClipboard::to_clipboard_from(timestamp))
                     .expect("fail to set clipboard content");
             }
         }
