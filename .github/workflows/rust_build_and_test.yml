@@ -45,17 +45,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build binary
+      - name: Build binary and test
         uses: houseabsolute/actions-rust-cross@v1
         with:
-          command: build
-          target: ${{ matrix.platform.target }}
-          args: "--locked --release"
-          strip: true
-      - name: Run test
-        uses: houseabsolute/actions-rust-cross@v1
-        with:
-          command: test
+          command: both
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
           strip: true
