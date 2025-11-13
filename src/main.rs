@@ -3,9 +3,11 @@ mod config;
 
 use crate::command::Command;
 use crate::command::CrontabCommand;
+use crate::command::Direction;
 use crate::command::JsonCommand;
 use crate::command::TimestampCommand;
 use crate::command::TranslateCommand;
+use crate::command::UrlCommand;
 use clap::Parser;
 use clap::Subcommand;
 use std::io::Read;
@@ -56,6 +58,17 @@ enum Commands {
         #[arg(short, long)]
         to: Option<String>,
     },
+
+    /// Url encode/decode
+    #[clap(name = "url")]
+    Url {
+        /// Text to encode/decode
+        text: String,
+
+        /// Decode instead of encode
+        #[arg(short, long)]
+        decode: bool,
+    },
 }
 
 #[derive(Parser)]
@@ -82,10 +95,18 @@ impl Cli {
                     }
                 };
                 &JsonCommand::new(&data, path.as_deref(), *compress)?
-            },
+            }
             Commands::Crontab { expression } => &CrontabCommand::new(expression)?,
             Commands::Translate { text, from, to } => {
                 &TranslateCommand::new(text, from.as_deref(), to.as_deref())?
+            }
+            Commands::Url { text, decode } => {
+                let direction = if *decode {
+                    Direction::Decode
+                } else {
+                    Direction::Encode
+                };
+                &UrlCommand::new(text, direction)
             }
         };
         cmd.execute()?;
