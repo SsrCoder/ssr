@@ -8,6 +8,7 @@ use crate::command::TimestampCommand;
 use crate::command::TranslateCommand;
 use clap::Parser;
 use clap::Subcommand;
+use std::io::Read;
 use tracing::level_filters::LevelFilter;
 use tracing::*;
 use tracing_appender::non_blocking::WorkerGuard;
@@ -26,7 +27,7 @@ enum Commands {
     /// JSON parse with syntax highlight
     Json {
         /// JSON data parse and display with syntax highlight
-        data: String,
+        data: Option<String>,
 
         /// JSON path for query from data, RFC: https://www.rfc-editor.org/rfc/rfc9535.html
         #[arg(short, long)]
@@ -71,7 +72,17 @@ impl Cli {
                 data,
                 path,
                 compress,
-            } => &JsonCommand::new(data, path.as_deref(), *compress)?,
+            } => {
+                let data = match data {
+                    Some(data) => data.clone(),
+                    None => {
+                        let mut buf = String::new();
+                        std::io::stdin().read_to_string(&mut buf)?;
+                        buf
+                    }
+                };
+                &JsonCommand::new(&data, path.as_deref(), *compress)?
+            },
             Commands::Crontab { expression } => &CrontabCommand::new(expression)?,
             Commands::Translate { text, from, to } => {
                 &TranslateCommand::new(text, from.as_deref(), to.as_deref())?
