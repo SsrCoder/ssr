@@ -1,9 +1,10 @@
 use super::Command;
+use chrono::Datelike;
 use chrono::Local;
 use chrono::TimeZone;
 use chrono::Utc;
-use crossterm::{clipboard::CopyToClipboard, execute};
 use colored::Colorize;
+use crossterm::{clipboard::CopyToClipboard, execute};
 
 pub struct TimestampCommand {
     timestamp: Option<i64>,
@@ -52,8 +53,18 @@ impl Command for TimestampCommand {
                 };
 
                 println!("{:16} {}", "Unix Timestamp".green(), ts.to_string());
-                println!("{:16} {}", "GMT".red(), utc_time.to_string());
-                println!("{:16} {}", "Local".blue(), time.to_string());
+                println!(
+                    "{:16} {} {}",
+                    "GMT".red(),
+                    utc_time.to_string(),
+                    utc_time.weekday()
+                );
+                println!(
+                    "{:16} {} {}",
+                    "Local".blue(),
+                    time.to_string(),
+                    utc_time.weekday()
+                );
                 println!("{:16} {}", "Relative".yellow(), relative);
             }
             None => {
@@ -61,8 +72,11 @@ impl Command for TimestampCommand {
                 let timestamp = now.timestamp().to_string();
                 println!("current timestamp: {}", &timestamp);
 
-                execute!(std::io::stdout(), CopyToClipboard::to_clipboard_from(timestamp))
-                    .expect("fail to set clipboard content");
+                execute!(
+                    std::io::stdout(),
+                    CopyToClipboard::to_clipboard_from(timestamp)
+                )
+                .expect("fail to set clipboard content");
             }
         }
         Ok(())
